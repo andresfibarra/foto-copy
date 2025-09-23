@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { ArrowLeft, Plus, Calendar, User, Stethoscope } from 'lucide-react'
 import { useData } from '../state/DataContext.jsx'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet'
 
 export default function PatientDetailPage() {
   const { patientId } = useParams()
@@ -9,7 +17,12 @@ export default function PatientDetailPage() {
   const encounters = useMemo(() => data.encounters.filter(e => e.patientId === patientId), [data.encounters, patientId])
 
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState({ clinicianId: data.clinicians[0]?.id || '', bodyPart: '', careType: 'ORTHOPEDIC', injuryType: '' })
+  const [form, setForm] = useState({ 
+    clinicianId: data.clinicians[0]?.id || '', 
+    bodyPart: '', 
+    careType: 'ORTHOPEDIC', 
+    injuryType: '' 
+  })
 
   if (!patient) return <div>Patient not found</div>
 
@@ -21,66 +34,136 @@ export default function PatientDetailPage() {
   }
 
   return (
-    <div>
-      <h2>{patient.firstName} {patient.lastName} — MRN {patient.mrn}</h2>
-      <button onClick={() => setShowModal(true)}>Create new encounter</button>
-      <ul style={{ marginTop: '1rem' }}>
-        {encounters.map(e => (
-          <li key={e.id} style={{ margin: '0.5rem 0' }}>
-            <Link to={`/encounters/${e.id}`}>
-              {e.startedAt} • {e.bodyPart} • {e.careType} • {e.injuryType}
-            </Link>
-          </li>
-        ))}
-        {encounters.length === 0 && <li>No encounters yet.</li>}
-      </ul>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" asChild>
+          <Link to="/">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold">{patient.firstName} {patient.lastName}</h1>
+          <p className="text-muted-foreground">MRN: {patient.mrn}</p>
+        </div>
+      </div>
 
-      {showModal && (
-        <div style={backdropStyle} onClick={() => setShowModal(false)}>
-          <div style={modalStyle} onClick={e => e.stopPropagation()}>
-            <h3>Create new encounter</h3>
-            <form onSubmit={onSubmit}>
-              <label>
-                Clinician
-                <select value={form.clinicianId} onChange={e => setForm(f => ({ ...f, clinicianId: e.target.value }))}>
-                  {data.clinicians.map(c => (
-                    <option key={c.id} value={c.id}>{c.lastName}, {c.firstName}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Body part
-                <input value={form.bodyPart} onChange={e => setForm(f => ({ ...f, bodyPart: e.target.value }))} />
-              </label>
-              <label>
-                Care type
-                <select value={form.careType} onChange={e => setForm(f => ({ ...f, careType: e.target.value }))}>
-                  <option value="ORTHOPEDIC">orthopedic</option>
-                  <option value="NEUROLOGIC">neurologic</option>
-                  <option value="PELVIC_FLOOR">pelvic floor</option>
-                </select>
-              </label>
-              <label>
-                Injury type
-                <input value={form.injuryType} onChange={e => setForm(f => ({ ...f, injuryType: e.target.value }))} />
-              </label>
-              <div style={{ marginTop: '1rem' }}>
-                <button type="submit">Create</button>
-                <button type="button" onClick={() => setShowModal(false)} style={{ marginLeft: '0.5rem' }}>Cancel</button>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Encounters</h2>
+        <Sheet open={showModal} onOpenChange={setShowModal}>
+          <SheetTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create new encounter
+            </Button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Create new encounter</SheetTitle>
+              <SheetDescription>
+                Add a new injury/care episode for this patient
+              </SheetDescription>
+            </SheetHeader>
+            <form onSubmit={onSubmit} className="space-y-4 mt-6">
+              <div className="space-y-2">
+                <Label>Clinician</Label>
+                <Select value={form.clinicianId} onValueChange={value => setForm(f => ({ ...f, clinicianId: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select clinician" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {data.clinicians.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.lastName}, {c.firstName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Body part</Label>
+                <Input
+                  value={form.bodyPart}
+                  onChange={e => setForm(f => ({ ...f, bodyPart: e.target.value }))}
+                  placeholder="e.g., knee, shoulder"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Care type</Label>
+                <Select value={form.careType} onValueChange={value => setForm(f => ({ ...f, careType: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ORTHOPEDIC">Orthopedic</SelectItem>
+                    <SelectItem value="NEUROLOGIC">Neurologic</SelectItem>
+                    <SelectItem value="PELVIC_FLOOR">Pelvic Floor</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Injury type</Label>
+                <Input
+                  value={form.injuryType}
+                  onChange={e => setForm(f => ({ ...f, injuryType: e.target.value }))}
+                  placeholder="e.g., ACL sprain, rotator cuff tear"
+                />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Create</Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-    </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      <div className="grid gap-4">
+        {encounters.map((e, index) => (
+          <motion.div
+            key={e.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: index * 0.05 }}
+          >
+            <Card className="hover:shadow-md transition-shadow">
+              <Link to={`/encounters/${e.id}`}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{e.bodyPart}</CardTitle>
+                      <CardDescription>{e.careType} • {e.injuryType}</CardDescription>
+                    </div>
+                    <div className="text-right text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {e.startedAt}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Stethoscope className="h-3 w-3" />
+                        {data.clinicians.find(c => c.id === e.clinicianId)?.lastName}
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Link>
+            </Card>
+          </motion.div>
+        ))}
+        {encounters.length === 0 && (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">No encounters yet.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </motion.div>
   )
 }
-
-const backdropStyle = {
-  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-}
-const modalStyle = {
-  background: 'white', padding: '1rem', borderRadius: '8px', width: 'min(560px, 92vw)'
-}
-
-

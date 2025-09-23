@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { ArrowLeft, Save } from 'lucide-react'
 import { useData } from '../state/DataContext.jsx'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 
 export default function CreatePatientPage() {
   const navigate = useNavigate()
@@ -22,50 +29,109 @@ export default function CreatePatientPage() {
   }
 
   return (
-    <div>
-      <h2>Create patient</h2>
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: '0.75rem' }}>
-        <label>
-          First name
-          <input value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} required />
-        </label>
-        <label>
-          Last name
-          <input value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} required />
-        </label>
-        <label>
-          Preferred name
-          <input value={form.preferredName} onChange={e => setForm(f => ({ ...f, preferredName: e.target.value }))} />
-        </label>
-        <label>
-          Patient ID (MRN)
-          <input value={form.mrn} onChange={e => setForm(f => ({ ...f, mrn: e.target.value }))} required />
-        </label>
-        <label>
-          Biological sex
-          <select value={form.sex} onChange={e => setForm(f => ({ ...f, sex: e.target.value }))} required>
-            <option value="">Select…</option>
-            <option value="F">Female</option>
-            <option value="M">Male</option>
-            <option value="X">Intersex/Other</option>
-            <option value="U">Prefer not to say</option>
-          </select>
-        </label>
-        <label>
-          Language
-          <input value={form.language} onChange={e => setForm(f => ({ ...f, language: e.target.value }))} />
-        </label>
-        <label>
-          Date of birth
-          <input type="date" value={form.dateOfBirth} onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))} />
-        </label>
-        <div style={{ marginTop: '0.5rem' }}>
-          <button type="button" onClick={() => navigate(-1)} style={{ marginRight: '0.5rem' }}>Cancel</button>
-          <button type="submit">Create</button>
-        </div>
-      </form>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="max-w-2xl mx-auto"
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle>Create Patient</CardTitle>
+          <CardDescription>
+            Add a new patient to the system
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First name *</Label>
+                <Input
+                  id="firstName"
+                  value={form.firstName}
+                  onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last name *</Label>
+                <Input
+                  id="lastName"
+                  value={form.lastName}
+                  onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="preferredName">Preferred name</Label>
+              <Input
+                id="preferredName"
+                value={form.preferredName}
+                onChange={e => setForm(f => ({ ...f, preferredName: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mrn">Patient ID (MRN) *</Label>
+              <Input
+                id="mrn"
+                value={form.mrn}
+                onChange={e => setForm(f => ({ ...f, mrn: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sex">Biological sex *</Label>
+                <Select value={form.sex} onValueChange={value => setForm(f => ({ ...f, sex: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="F">Female</SelectItem>
+                    <SelectItem value="M">Male</SelectItem>
+                    <SelectItem value="X">Intersex/Other</SelectItem>
+                    <SelectItem value="U">Prefer not to say</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="language">Language</Label>
+                <Input
+                  id="language"
+                  value={form.language}
+                  onChange={e => setForm(f => ({ ...f, language: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dateOfBirth">Date of birth</Label>
+              <Input
+                id="dateOfBirth"
+                type="date"
+                value={form.dateOfBirth}
+                onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button type="submit">
+                <Save className="h-4 w-4 mr-2" />
+                Create
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
-
-

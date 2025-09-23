@@ -1,0 +1,40 @@
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useData } from '../state/DataContext.jsx'
+
+export default function PatientsPage() {
+  const { data } = useData()
+  const [query, setQuery] = useState('')
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return data.patients
+    return data.patients.filter(p =>
+      p.mrn.toLowerCase().includes(q) ||
+      `${p.firstName} ${p.lastName}`.toLowerCase().includes(q)
+    )
+  }, [query, data.patients])
+
+  return (
+    <div>
+      <input
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        placeholder="Search by MRN or name"
+        style={{ width: '100%', padding: '0.75rem', fontSize: '1rem', marginBottom: '1rem' }}
+      />
+      <ul>
+        {results.map(p => (
+          <li key={p.id} style={{ margin: '0.5rem 0' }}>
+            <Link to={`/patients/${p.id}`}>
+              {p.lastName}, {p.firstName} — MRN {p.mrn}
+            </Link>
+          </li>
+        ))}
+        {results.length === 0 && <li>No patients found.</li>}
+      </ul>
+    </div>
+  )
+}
+
+

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useMemo, useState } from 'react'
 
 const DataContext = createContext(null)
@@ -8,8 +9,8 @@ const initialData = {
     { id: 'c2', firstName: 'Jamie', lastName: 'Rivera' },
   ],
   patients: [
-    { id: 'p1', mrn: '10001', firstName: 'Taylor', lastName: 'Morgan' },
-    { id: 'p2', mrn: '10002', firstName: 'Jordan', lastName: 'Lee' },
+    { id: 'p1', mrn: '10001', firstName: 'Taylor', lastName: 'Morgan', preferredName: 'Tay', sex: 'F', language: 'English', dateOfBirth: '1990-01-01' },
+    { id: 'p2', mrn: '10002', firstName: 'Jordan', lastName: 'Lee', preferredName: 'J', sex: 'M', language: 'Spanish', dateOfBirth: '1987-05-20' },
   ],
   encounters: [
     { id: 'e1', patientId: 'p1', clinicianId: 'c1', bodyPart: 'knee', careType: 'ORTHOPEDIC', injuryType: 'ACL sprain', startedAt: '2025-08-01' },
@@ -46,7 +47,16 @@ export function DataProvider({ children }) {
     return id
   }
 
-  const value = useMemo(() => ({ data, addEncounter, addSnapshot }), [data])
+  const addPatient = ({ firstName, lastName, preferredName, mrn, sex, language, dateOfBirth }) => {
+    const id = `p${Date.now()}`
+    setData(prev => ({
+      ...prev,
+      patients: [...prev.patients, { id, firstName, lastName, preferredName, mrn, sex, language, dateOfBirth }],
+    }))
+    return id
+  }
+
+  const value = useMemo(() => ({ data, addEncounter, addSnapshot, addPatient }), [data])
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>
 }
 

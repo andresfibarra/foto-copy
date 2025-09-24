@@ -1,10 +1,34 @@
-import { useState } from 'react'
-import { Outlet, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
+import { useData } from './state/DataContext.jsx'
 
 function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { currentUser, login, logout } = useData()
+  const navigate = useNavigate()
+  const location = useLocation()
+  
   const toggleDrawer = () => setDrawerOpen(o => !o)
   const closeDrawer = () => setDrawerOpen(false)
+
+  // Redirect to login if not authenticated (except on login page)
+  useEffect(() => {
+    if (!currentUser && location.pathname !== '/login') {
+      navigate('/login')
+    }
+  }, [currentUser, location.pathname, navigate])
+
+  // Redirect to home if authenticated and on login page
+  useEffect(() => {
+    if (currentUser && location.pathname === '/login') {
+      navigate('/')
+    }
+  }, [currentUser, location.pathname, navigate])
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
@@ -40,7 +64,27 @@ function App() {
           </Link>
         </h1>
         
-        <div style={{ width: '40px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          {currentUser && (
+            <span style={{ fontSize: '14px', color: '#666' }}>
+              Welcome, {currentUser.name}
+            </span>
+          )}
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#dc2626',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Logout
+          </button>
+        </div>
       </header>
 
       {drawerOpen && (
@@ -63,6 +107,13 @@ function App() {
               style={{ display: 'block', marginBottom: '10px', color: '#2b5bd7' }}
             >
               Home
+            </Link>
+            <Link 
+              to="/open-episodes" 
+              onClick={closeDrawer} 
+              style={{ display: 'block', marginBottom: '10px', color: '#2b5bd7' }}
+            >
+              Open Episodes
             </Link>
             <Link 
               to="/patients/new" 

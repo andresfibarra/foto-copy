@@ -1,9 +1,5 @@
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Plus, Calendar, TrendingUp } from 'lucide-react'
 import { useData } from '../state/DataContext.jsx'
-import { Button } from '../components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 
 export default function EncounterDetailPage() {
   const { encounterId } = useParams()
@@ -16,74 +12,87 @@ export default function EncounterDetailPage() {
   const snapshots = data.snapshots.filter(s => s.encounterId === encounterId)
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-6"
-    >
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to={`/patients/${patient.id}`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <Link to={`/patients/${patient.id}`} style={{ textDecoration: 'none', color: '#2b5bd7' }}>
+          ← Back
+        </Link>
         <div>
-          <h1 className="text-3xl font-bold">{encounter.bodyPart}</h1>
-          <p className="text-muted-foreground">
-            {encounter.careType} • {encounter.injuryType}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Patient: {patient.firstName} {patient.lastName} • Started: {encounter.startedAt}
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>
+            {patient.firstName} {patient.lastName}
+          </h1>
+          <p style={{ color: '#666', margin: 0 }}>
+            {encounter.bodyPart} • {encounter.careType} • {encounter.injuryType}
           </p>
         </div>
       </div>
 
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Snapshots</h2>
-        <Button onClick={() => navigate(`/encounters/${encounterId}/snapshots/new`)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create snapshot
-        </Button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: '600', margin: 0 }}>Snapshots</h2>
+        <button 
+          onClick={() => navigate(`/encounters/${encounterId}/snapshots/new`)}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#2b5bd7',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          + Create snapshot
+        </button>
       </div>
 
-      <div className="grid gap-4">
-        {snapshots.map((s, index) => (
-          <motion.div
-            key={s.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: index * 0.05 }}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {snapshots.map(snapshot => (
+          <div
+            key={snapshot.id}
+            style={{
+              backgroundColor: 'white',
+              border: '1px solid #ccc',
+              borderRadius: '8px',
+              padding: '15px'
+            }}
           >
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Snapshot</CardTitle>
-                    <CardDescription>
-                      {new Date(s.takenAt).toLocaleString()}
-                    </CardDescription>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-2 text-2xl font-bold text-primary">
-                      <TrendingUp className="h-6 w-6" />
-                      {s.computedScore}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Score</p>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          </motion.div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px' }}>
+                  📅 {new Date(snapshot.takenAt).toLocaleDateString()}
+                </h3>
+                <p style={{ margin: 0, color: '#666' }}>
+                  Score: {snapshot.computedScore}
+                </p>
+              </div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2b5bd7' }}>
+                {snapshot.computedScore}
+              </div>
+            </div>
+            <div style={{ marginTop: '10px' }}>
+              <h4 style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>Responses:</h4>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {Object.entries(snapshot.responses).map(([key, value]) => (
+                  <li key={key} style={{ fontSize: '14px' }}>
+                    {key}: {value}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         ))}
         {snapshots.length === 0 && (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">No snapshots yet.</p>
-            </CardContent>
-          </Card>
+          <div style={{
+            backgroundColor: 'white',
+            border: '1px solid #ccc',
+            borderRadius: '8px',
+            padding: '20px',
+            textAlign: 'center',
+            color: '#666'
+          }}>
+            No snapshots yet.
+          </div>
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }

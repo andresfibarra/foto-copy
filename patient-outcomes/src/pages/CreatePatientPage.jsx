@@ -1,13 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Save } from 'lucide-react'
 import { useData } from '../state/DataContext.jsx'
-import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
-import { Label } from '../components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 
 export default function CreatePatientPage() {
   const navigate = useNavigate()
@@ -29,109 +22,146 @@ export default function CreatePatientPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="max-w-2xl mx-auto"
-    >
-      <Card>
-        <CardHeader>
-          <CardTitle>Create Patient</CardTitle>
-          <CardDescription>
-            Add a new patient to the system
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First name *</Label>
-                <Input
-                  id="firstName"
-                  value={form.firstName}
-                  onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last name *</Label>
-                <Input
-                  id="lastName"
-                  value={form.lastName}
-                  onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="preferredName">Preferred name</Label>
-              <Input
-                id="preferredName"
-                value={form.preferredName}
-                onChange={e => setForm(f => ({ ...f, preferredName: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="mrn">Patient ID (MRN) *</Label>
-              <Input
-                id="mrn"
-                value={form.mrn}
-                onChange={e => setForm(f => ({ ...f, mrn: e.target.value }))}
+    <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{
+        backgroundColor: 'white',
+        border: '1px solid #ccc',
+        borderRadius: '8px',
+        padding: '20px'
+      }}>
+        <h2 style={{ marginTop: 0 }}>Create Patient</h2>
+        <p style={{ color: '#666', marginBottom: '20px' }}>
+          Add a new patient to the system
+        </p>
+        
+        <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div>
+              <label htmlFor="firstName" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                First name *
+              </label>
+              <input
+                id="firstName"
+                value={form.firstName}
+                onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
                 required
+                style={{ width: '100%', padding: '8px' }}
               />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="sex">Biological sex *</Label>
-                <Select value={form.sex} onValueChange={value => setForm(f => ({ ...f, sex: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="F">Female</SelectItem>
-                    <SelectItem value="M">Male</SelectItem>
-                    <SelectItem value="X">Intersex/Other</SelectItem>
-                    <SelectItem value="U">Prefer not to say</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="language">Language</Label>
-                <Input
-                  id="language"
-                  value={form.language}
-                  onChange={e => setForm(f => ({ ...f, language: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dateOfBirth">Date of birth</Label>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={form.dateOfBirth}
-                onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+            <div>
+              <label htmlFor="lastName" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Last name *
+              </label>
+              <input
+                id="lastName"
+                value={form.lastName}
+                onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
+                required
+                style={{ width: '100%', padding: '8px' }}
               />
             </div>
+          </div>
 
-            <div className="flex gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => navigate(-1)}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <Button type="submit">
-                <Save className="h-4 w-4 mr-2" />
-                Create
-              </Button>
+          <div>
+            <label htmlFor="preferredName" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Preferred name
+            </label>
+            <input
+              id="preferredName"
+              value={form.preferredName}
+              onChange={e => setForm(f => ({ ...f, preferredName: e.target.value }))}
+              style={{ width: '100%', padding: '8px' }}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="mrn" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Patient ID (MRN) *
+            </label>
+            <input
+              id="mrn"
+              value={form.mrn}
+              onChange={e => setForm(f => ({ ...f, mrn: e.target.value }))}
+              required
+              style={{ width: '100%', padding: '8px' }}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div>
+              <label htmlFor="sex" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Biological sex *
+              </label>
+              <select
+                id="sex"
+                value={form.sex}
+                onChange={e => setForm(f => ({ ...f, sex: e.target.value }))}
+                required
+                style={{ width: '100%', padding: '8px' }}
+              >
+                <option value="">Select...</option>
+                <option value="F">Female</option>
+                <option value="M">Male</option>
+                <option value="X">Intersex/Other</option>
+                <option value="U">Prefer not to say</option>
+              </select>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </motion.div>
+            <div>
+              <label htmlFor="language" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Language
+              </label>
+              <input
+                id="language"
+                value={form.language}
+                onChange={e => setForm(f => ({ ...f, language: e.target.value }))}
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="dateOfBirth" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Date of birth
+            </label>
+            <input
+              id="dateOfBirth"
+              type="date"
+              value={form.dateOfBirth}
+              onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+              style={{ width: '100%', padding: '8px' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', paddingTop: '20px' }}>
+            <button 
+              type="button" 
+              onClick={() => navigate(-1)}
+              style={{ 
+                padding: '10px 20px', 
+                backgroundColor: '#f0f0f0', 
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              style={{ 
+                padding: '10px 20px', 
+                backgroundColor: '#2b5bd7', 
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Create
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }

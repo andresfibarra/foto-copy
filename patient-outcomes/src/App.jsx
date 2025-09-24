@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Menu, X } from 'lucide-react'
 import { useData } from './state/DataContext.jsx'
+import { Button } from './components/ui/button'
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetClose } from './components/ui/sheet'
 
 function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -31,120 +35,65 @@ function App() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-      <header style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
-        height: '100px', 
-        backgroundColor: '#f5f5f5', 
-        borderBottom: '1px solid #ccc', 
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 20px'
-      }}>
-        <button 
-          onClick={toggleDrawer}
-          style={{ 
-            background: 'none', 
-            border: 'none', 
-            cursor: 'pointer',
-            fontSize: '20px'
-          }}
-        >
-          ☰
-        </button>
-        
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>
-          <Link to="/" style={{ color: '#222', textDecoration: 'none' }}>
-            Patient outcomes
-          </Link>
-        </h1>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          {currentUser && (
-            <span style={{ fontSize: '14px', color: '#666' }}>
-              Welcome, {currentUser.name}
-            </span>
-          )}
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#dc2626',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            Logout
-          </button>
+    <div className="min-h-screen bg-background">
+      <header className="fixed top-0 left-0 right-0 h-24 bg-background border-b border-border z-50">
+        <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+          <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Open navigation">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-80">
+              <SheetHeader>
+                <SheetTitle>Navigation</SheetTitle>
+              </SheetHeader>
+              <nav className="mt-6 space-y-4">
+                <Link to="/" onClick={closeDrawer} className="block text-sm font-medium hover:text-primary">
+                  Home
+                </Link>
+                <Link to="/open-episodes" onClick={closeDrawer} className="block text-sm font-medium hover:text-primary">
+                  Open Episodes
+                </Link>
+                <Link to="/patients/new" onClick={closeDrawer} className="block text-sm font-medium hover:text-primary">
+                  Create patient
+                </Link>
+              </nav>
+            </SheetContent>
+          </Sheet>
+          
+          <h1 className="text-2xl font-bold">
+            <Link to="/" className="text-foreground hover:text-primary transition-colors">
+              Patient outcomes
+            </Link>
+          </h1>
+          
+          <div className="flex items-center gap-4">
+            {currentUser && (
+              <span className="text-sm text-muted-foreground">
+                Welcome, {currentUser.name}
+              </span>
+            )}
+            <Button
+              onClick={handleLogout}
+              variant="destructive"
+              size="sm"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 
-      {drawerOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '300px',
-          height: '100vh',
-          backgroundColor: 'white',
-          borderRight: '1px solid #ccc',
-          zIndex: 60,
-          padding: '20px'
-        }}>
-          <h2 style={{ marginTop: 0 }}>Navigation</h2>
-          <nav style={{ marginTop: '20px' }}>
-            <Link 
-              to="/" 
-              onClick={closeDrawer} 
-              style={{ display: 'block', marginBottom: '10px', color: '#2b5bd7' }}
-            >
-              Home
-            </Link>
-            <Link 
-              to="/open-episodes" 
-              onClick={closeDrawer} 
-              style={{ display: 'block', marginBottom: '10px', color: '#2b5bd7' }}
-            >
-              Open Episodes
-            </Link>
-            <Link 
-              to="/patients/new" 
-              onClick={closeDrawer} 
-              style={{ display: 'block', marginBottom: '10px', color: '#2b5bd7' }}
-            >
-              Create patient
-            </Link>
-          </nav>
-        </div>
-      )}
-
-      {drawerOpen && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            zIndex: 55
-          }}
-          onClick={closeDrawer}
-        />
-      )}
-
-      <main style={{ paddingTop: '120px', minHeight: '100vh' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+      <main className="pt-24 min-h-screen">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="max-w-4xl mx-auto px-4 py-8"
+        >
           <Outlet />
-        </div>
+        </motion.div>
       </main>
     </div>
   )

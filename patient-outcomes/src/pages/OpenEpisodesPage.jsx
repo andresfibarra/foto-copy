@@ -1,456 +1,346 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Search, ChevronUp, ChevronDown, Mail, Rocket, X } from 'lucide-react'
 import { useData } from '../state/DataContext.jsx'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 
 export default function OpenEpisodesPage() {
   const { data } = useData()
-  const [selectedClinician, setSelectedClinician] = useState('all')
+  const [filterClinician, setFilterClinician] = useState('All Clinicians')
+  const [searchTerm, setSearchTerm] = useState('')
   const [entriesPerPage, setEntriesPerPage] = useState(25)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [sortColumn, setSortColumn] = useState('id')
-  const [sortDirection, setSortDirection] = useState('asc')
   const [currentPage, setCurrentPage] = useState(1)
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' })
 
-  // Calculate episode statistics
-  const episodeStats = useMemo(() => {
-    const episodes = data.encounters.map(encounter => {
+  const allEpisodes = useMemo(() => {
+    return data.encounters.map(encounter => {
       const patient = data.patients.find(p => p.id === encounter.patientId)
       const clinician = data.clinicians.find(c => c.id === encounter.clinicianId)
       const snapshots = data.snapshots.filter(s => s.encounterId === encounter.id)
-      
-      const setupDate = new Date(encounter.startedAt)
-      const intakeDate = snapshots.length > 0 ? new Date(snapshots[0].takenAt) : null
-      const statusDate = snapshots.length > 1 ? new Date(snapshots[snapshots.length - 1].takenAt) : null
-      const emailSentDate = new Date(encounter.startedAt)
-      emailSentDate.setDate(emailSentDate.getDate() + 30) // Simulate email sent 30 days after setup
-      
-      const daysSinceSetup = Math.floor((new Date() - setupDate) / (1000 * 60 * 60 * 24))
-      const daysSinceIntake = intakeDate ? Math.floor((new Date() - intakeDate) / (1000 * 60 * 60 * 24)) : null
-      const daysSinceStatus = statusDate ? Math.floor((new Date() - statusDate) / (1000 * 60 * 60 * 24)) : null
-      
+
+      // Calculate status based on dates (simplified for demo)
+      const today = new Date()
+      const startedAtDate = new Date(encounter.startedAt)
       let status = 'In Progress'
-      if (daysSinceSetup >= 45) status = 'Inactive 45+ days'
-      else if (daysSinceSetup >= 30) status = 'Close 30-44 days'
-      else if (daysSinceStatus && daysSinceStatus >= 14) status = 'Status Overdue 14+ days'
-      else if (daysSinceIntake && daysSinceIntake >= 7) status = 'Intake Overdue 7+ days'
-      
+      let statusColor = 'bg-green-500'
+
+      const diffDays = (date1, date2) => Math.ceil(Math.abs(date1 - date2) / (1000 * 60 * 60 * 24))
+
+      // Example logic for statuses
+      if (diffDays(today, startedAtDate) > 45) {
+        status = 'Inactive 45+ days'
+        statusColor = 'bg-red-500'
+      } else if (diffDays(today, startedAtDate) > 30) {
+        status = 'Close 30-44 days'
+        statusColor = 'bg-orange-500'
+      } else if (diffDays(today, startedAtDate) > 14) {
+        status = 'Status Overdue 14+ days'
+        statusColor = 'bg-yellow-500'
+      } else if (diffDays(today, startedAtDate) > 7) {
+        status = 'Intake Overdue 7+ days'
+        statusColor = 'bg-blue-500'
+      }
+
       return {
         id: encounter.id,
-        patient: patient,
-        clinician: clinician,
+        patientId: patient?.id,
+        patientName: `${patient?.lastName}, ${patient?.firstName}`,
+        patientMRN: patient?.mrn,
+        clinicianName: `${clinician?.lastName}, ${clinician?.firstName}`,
         condition: encounter.bodyPart,
-        setup: encounter.startedAt,
-        intake: intakeDate?.toISOString().split('T')[0] || 'N/A',
-        status: statusDate?.toISOString().split('T')[0] || 'N/A',
-        emailSent: emailSentDate.toISOString().split('T')[0],
-        statusType: status,
-        daysSinceSetup,
-        daysSinceIntake,
-        daysSinceStatus
+        setupDate: encounter.startedAt,
+        intakeDate: encounter.startedAt,
+        statusDate: new Date(startedAtDate.setDate(startedAtDate.getDate() + 30)).toISOString().slice(0, 10),
+        emailSent: new Date(startedAtDate.setDate(startedAtDate.getDate() + 15)).toISOString().slice(0, 10),
+        status: status,
+        statusColor: statusColor,
       }
     })
-
-    const stats = {
-      inProgress: episodes.filter(e => e.statusType === 'In Progress').length,
-      intakeOverdue: episodes.filter(e => e.statusType === 'Intake Overdue 7+ days').length,
-      statusOverdue: episodes.filter(e => e.statusType === 'Status Overdue 14+ days').length,
-      close30to44: episodes.filter(e => e.statusType === 'Close 30-44 days').length,
-      inactive45plus: episodes.filter(e => e.statusType === 'Inactive 45+ days').length
-    }
-
-    return { episodes, stats }
   }, [data])
 
-  // Filter and sort episodes
-  const filteredAndSortedEpisodes = useMemo(() => {
-    let filtered = episodeStats.episodes
+  const filteredEpisodes = useMemo(() => {
+    let filtered = allEpisodes
 
-    // Filter by clinician
-    if (selectedClinician !== 'all') {
-      filtered = filtered.filter(episode => episode.clinician?.id === selectedClinician)
+    if (filterClinician !== 'All Clinicians') {
+      filtered = filtered.filter(episode => episode.clinicianName.includes(filterClinician))
     }
 
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(episode => 
-        episode.patient?.firstName.toLowerCase().includes(query) ||
-        episode.patient?.lastName.toLowerCase().includes(query) ||
-        episode.patient?.mrn.toLowerCase().includes(query) ||
-        episode.condition.toLowerCase().includes(query)
+    if (searchTerm) {
+      const lowerCaseSearchTerm = searchTerm.toLowerCase()
+      filtered = filtered.filter(episode =>
+        episode.patientName.toLowerCase().includes(lowerCaseSearchTerm) ||
+        episode.patientMRN.toLowerCase().includes(lowerCaseSearchTerm)
       )
     }
+    return filtered
+  }, [allEpisodes, filterClinician, searchTerm])
 
-    // Sort episodes
-    filtered.sort((a, b) => {
-      let aVal = a[sortColumn]
-      let bVal = b[sortColumn]
-      
-      if (sortColumn === 'patient') {
-        aVal = `${a.patient?.lastName}, ${a.patient?.firstName}`
-        bVal = `${b.patient?.lastName}, ${b.patient?.firstName}`
-      } else if (sortColumn === 'clinician') {
-        aVal = `${a.clinician?.lastName}, ${a.clinician?.firstName}`
-        bVal = `${b.clinician?.lastName}, ${b.clinician?.firstName}`
+  const sortedEpisodes = useMemo(() => {
+    if (!sortConfig.key) return filteredEpisodes
+
+    return [...filteredEpisodes].sort((a, b) => {
+      const aValue = a[sortConfig.key]
+      const bValue = b[sortConfig.key]
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'ascending' ? -1 : 1
       }
-      
-      if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal)
+      if (aValue > bValue) {
+        return sortConfig.direction === 'ascending' ? 1 : -1
       }
-      
-      if (sortDirection === 'asc') {
-        return aVal > bVal ? 1 : -1
-      } else {
-        return aVal < bVal ? 1 : -1
+      return 0
+    })
+  }, [filteredEpisodes, sortConfig])
+
+  const paginatedEpisodes = useMemo(() => {
+    const startIndex = (currentPage - 1) * entriesPerPage
+    const endIndex = startIndex + entriesPerPage
+    return sortedEpisodes.slice(startIndex, endIndex)
+  }, [sortedEpisodes, currentPage, entriesPerPage])
+
+  const totalPages = Math.ceil(filteredEpisodes.length / entriesPerPage)
+
+  const requestSort = (key) => {
+    let direction = 'ascending'
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending'
+    }
+    setSortConfig({ key, direction })
+  }
+
+  const getStatusCounts = useMemo(() => {
+    const counts = {
+      'In Progress': 0,
+      'Intake Overdue 7+ days': 0,
+      'Status Overdue 14+ days': 0,
+      'Close 30-44 days': 0,
+      'Inactive 45+ days': 0,
+    }
+    allEpisodes.forEach(episode => {
+      if (counts.hasOwnProperty(episode.status)) {
+        counts[episode.status]++
       }
     })
-
-    return filtered
-  }, [episodeStats.episodes, selectedClinician, searchQuery, sortColumn, sortDirection])
-
-  // Pagination
-  const totalPages = Math.ceil(filteredAndSortedEpisodes.length / entriesPerPage)
-  const startIndex = (currentPage - 1) * entriesPerPage
-  const paginatedEpisodes = filteredAndSortedEpisodes.slice(startIndex, startIndex + entriesPerPage)
-
-  const handleSort = (column) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortColumn(column)
-      setSortDirection('asc')
-    }
-    setCurrentPage(1)
-  }
-
-  const getStatusColor = (statusType) => {
-    switch (statusType) {
-      case 'In Progress': return '#22c55e'
-      case 'Intake Overdue 7+ days': return '#3b82f6'
-      case 'Status Overdue 14+ days': return '#f97316'
-      case 'Close 30-44 days': return '#ea580c'
-      case 'Inactive 45+ days': return '#dc2626'
-      default: return '#6b7280'
-    }
-  }
+    return counts
+  }, [allEpisodes])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>Open Episodes</h1>
-      
-      {/* Filters Section */}
-      <div>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '15px' }}>Filters</h2>
-        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-          <div style={{
-            backgroundColor: '#22c55e',
-            color: 'white',
-            padding: '15px',
-            borderRadius: '8px',
-            minWidth: '150px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{episodeStats.stats.inProgress}</div>
-            <div style={{ fontSize: '14px' }}>In Progress</div>
-            <a href="#" style={{ color: 'white', fontSize: '12px', textDecoration: 'underline' }}>More info</a>
-          </div>
-          
-          <div style={{
-            backgroundColor: '#3b82f6',
-            color: 'white',
-            padding: '15px',
-            borderRadius: '8px',
-            minWidth: '150px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{episodeStats.stats.intakeOverdue}</div>
-            <div style={{ fontSize: '14px' }}>Intake Overdue 7+ days</div>
-            <a href="#" style={{ color: 'white', fontSize: '12px', textDecoration: 'underline' }}>More info</a>
-          </div>
-          
-          <div style={{
-            backgroundColor: '#f97316',
-            color: 'white',
-            padding: '15px',
-            borderRadius: '8px',
-            minWidth: '150px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{episodeStats.stats.statusOverdue}</div>
-            <div style={{ fontSize: '14px' }}>Status Overdue 14+ days</div>
-            <a href="#" style={{ color: 'white', fontSize: '12px', textDecoration: 'underline' }}>More info</a>
-          </div>
-          
-          <div style={{
-            backgroundColor: '#ea580c',
-            color: 'white',
-            padding: '15px',
-            borderRadius: '8px',
-            minWidth: '150px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{episodeStats.stats.close30to44}</div>
-            <div style={{ fontSize: '14px' }}>Close 30-44 days</div>
-            <a href="#" style={{ color: 'white', fontSize: '12px', textDecoration: 'underline' }}>More info</a>
-          </div>
-          
-          <div style={{
-            backgroundColor: '#dc2626',
-            color: 'white',
-            padding: '15px',
-            borderRadius: '8px',
-            minWidth: '150px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{episodeStats.stats.inactive45plus}</div>
-            <div style={{ fontSize: '14px' }}>Inactive 45+ days</div>
-            <a href="#" style={{ color: 'white', fontSize: '12px', textDecoration: 'underline' }}>More info</a>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Open Episodes</h1>
+
+      {/* Filter Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {Object.entries(getStatusCounts).map(([status, count]) => (
+          <Card key={status} className="text-white">
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold">{count}</div>
+              <div className="text-sm">{status}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Filter by Clinician */}
-      <div>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '10px' }}>Filter by Clinician</h3>
-        <select
-          value={selectedClinician}
-          onChange={(e) => setSelectedClinician(e.target.value)}
-          style={{ padding: '8px', minWidth: '200px' }}
-        >
-          <option value="all">All Clinicians</option>
-          {data.clinicians.map(clinician => (
-            <option key={clinician.id} value={clinician.id}>
-              {clinician.lastName}, {clinician.firstName}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Filters and Search */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Filter by Clinician</label>
+              <Select value={filterClinician} onValueChange={(value) => {
+                setFilterClinician(value)
+                setCurrentPage(1)
+              }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All Clinicians">All Clinicians</SelectItem>
+                  {data.clinicians.map(c => (
+                    <SelectItem key={c.id} value={`${c.lastName}, ${c.firstName}`}>
+                      {c.lastName}, {c.firstName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      {/* Table Controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span>Show</span>
-          <select
-            value={entriesPerPage}
-            onChange={(e) => {
-              setEntriesPerPage(Number(e.target.value))
-              setCurrentPage(1)
-            }}
-            style={{ padding: '5px' }}
-          >
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
-          <span>entries</span>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span>Search:</span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value)
-              setCurrentPage(1)
-            }}
-            placeholder="Search by name or MRN..."
-            style={{ padding: '5px 10px', minWidth: '200px' }}
-          />
-        </div>
-      </div>
-
-      {/* Open Episodes Table */}
-      <div style={{
-        backgroundColor: 'white',
-        border: '1px solid #ccc',
-        borderRadius: '8px',
-        overflow: 'hidden'
-      }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead style={{ backgroundColor: '#f5f5f5' }}>
-            <tr>
-              {['id', 'patient', 'clinician', 'condition', 'setup', 'intake', 'status', 'emailSent', 'actions', 'close', 'info'].map(column => (
-                <th
-                  key={column}
-                  onClick={() => handleSort(column)}
-                  style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    borderBottom: '1px solid #ccc',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    fontWeight: '600'
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search by name or MRN"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value)
+                    setCurrentPage(1)
                   }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    {column.charAt(0).toUpperCase() + column.slice(1)}
-                    {sortColumn === column && (
-                      <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedEpisodes.map(episode => (
-              <tr key={episode.id} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '12px' }}>{episode.id}</td>
-                <td style={{ padding: '12px' }}>
-                  <Link 
-                    to={`/patients/${episode.patient?.id}`}
-                    style={{ color: '#2b5bd7', textDecoration: 'none' }}
-                  >
-                    {episode.patient?.lastName}, {episode.patient?.firstName}
-                  </Link>
-                </td>
-                <td style={{ padding: '12px' }}>
-                  {episode.clinician?.lastName}, {episode.clinician?.firstName}
-                </td>
-                <td style={{ padding: '12px' }}>{episode.condition}</td>
-                <td style={{ padding: '12px' }}>{episode.setup}</td>
-                <td style={{ padding: '12px' }}>
-                  {episode.intake !== 'N/A' ? (
-                    <Link 
-                      to={`/encounters/${episode.id}`}
-                      style={{ color: '#2b5bd7', textDecoration: 'none' }}
-                    >
-                      {episode.intake}
-                    </Link>
-                  ) : (
-                    episode.intake
-                  )}
-                </td>
-                <td style={{ padding: '12px' }}>
-                  {episode.status !== 'N/A' ? (
-                    <Link 
-                      to={`/encounters/${episode.id}`}
-                      style={{ color: '#2b5bd7', textDecoration: 'none' }}
-                    >
-                      {episode.status}
-                    </Link>
-                  ) : (
-                    episode.status
-                  )}
-                </td>
-                <td style={{ padding: '12px' }}>{episode.emailSent}</td>
-                <td style={{ padding: '12px' }}>
-                  <div style={{ display: 'flex', gap: '5px' }}>
-                    <button style={{
-                      backgroundColor: '#22c55e',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '5px 8px',
-                      cursor: 'pointer',
-                      fontSize: '12px'
-                    }}>
-                      📧
-                    </button>
-                    <button style={{
-                      backgroundColor: '#22c55e',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '5px 8px',
-                      cursor: 'pointer',
-                      fontSize: '12px'
-                    }}>
-                      🚀
-                    </button>
-                  </div>
-                </td>
-                <td style={{ padding: '12px' }}>
-                  <button style={{
-                    backgroundColor: '#dc2626',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    padding: '5px 10px',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}>
-                    Close
-                  </button>
-                </td>
-                <td style={{ padding: '12px' }}>
-                  <span style={{
-                    backgroundColor: getStatusColor(episode.statusType),
-                    color: 'white',
-                    padding: '2px 8px',
-                    borderRadius: '12px',
-                    fontSize: '12px'
-                  }}>
-                    {episode.statusType.includes('Inactive') ? 'Inactive' : 
-                     episode.statusType.includes('Close') ? 'Close' :
-                     episode.statusType.includes('Status') ? 'Status' :
-                     episode.statusType.includes('Intake') ? 'Intake' : 'Active'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  className="pl-10"
+                />
+              </div>
+            </div>
 
-      {/* Pagination */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ color: '#666' }}>
-          Showing {startIndex + 1} to {Math.min(startIndex + entriesPerPage, filteredAndSortedEpisodes.length)} of {filteredAndSortedEpisodes.length} entries
-        </div>
-        
-        <div style={{ display: 'flex', gap: '5px' }}>
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            style={{
-              padding: '5px 10px',
-              border: '1px solid #ccc',
-              backgroundColor: currentPage === 1 ? '#f5f5f5' : 'white',
-              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-              borderRadius: '4px'
-            }}
-          >
-            Previous
-          </button>
-          
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            const pageNum = i + 1
-            return (
-              <button
-                key={pageNum}
-                onClick={() => setCurrentPage(pageNum)}
-                style={{
-                  padding: '5px 10px',
-                  border: '1px solid #ccc',
-                  backgroundColor: currentPage === pageNum ? '#2b5bd7' : 'white',
-                  color: currentPage === pageNum ? 'white' : 'black',
-                  cursor: 'pointer',
-                  borderRadius: '4px'
-                }}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Show entries</label>
+              <Select value={entriesPerPage.toString()} onValueChange={(value) => {
+                setEntriesPerPage(Number(value))
+                setCurrentPage(1)
+              }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Episodes Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Open Episodes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  {[
+                    { key: 'id', label: 'Id' },
+                    { key: 'patientName', label: 'Patient' },
+                    { key: 'clinicianName', label: 'Clinician' },
+                    { key: 'condition', label: 'Condition' },
+                    { key: 'setupDate', label: 'Setup' },
+                    { key: 'intakeDate', label: 'Intake' },
+                    { key: 'statusDate', label: 'Status' },
+                    { key: 'emailSent', label: 'Email Sent' },
+                    { key: 'actions', label: 'Actions' },
+                    { key: 'close', label: 'Close' },
+                    { key: 'status', label: 'Info' },
+                  ].map(col => (
+                    <th
+                      key={col.key}
+                      onClick={() => requestSort(col.key)}
+                      className="text-left p-3 cursor-pointer hover:bg-muted"
+                    >
+                      <div className="flex items-center gap-1">
+                        {col.label}
+                        {sortConfig.key === col.key && (
+                          sortConfig.direction === 'ascending' ? 
+                            <ChevronUp className="h-4 w-4" /> : 
+                            <ChevronDown className="h-4 w-4" />
+                        )}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedEpisodes.length > 0 ? (
+                  paginatedEpisodes.map(episode => (
+                    <tr key={episode.id} className="border-b hover:bg-muted/50">
+                      <td className="p-3">{episode.id}</td>
+                      <td className="p-3">
+                        <Link to={`/patients/${episode.patientId}`} className="text-primary hover:underline">
+                          {episode.patientName}
+                        </Link>
+                      </td>
+                      <td className="p-3">{episode.clinicianName}</td>
+                      <td className="p-3">{episode.condition}</td>
+                      <td className="p-3">{episode.setupDate}</td>
+                      <td className="p-3">
+                        <Link to={`/encounters/${episode.id}`} className="text-primary hover:underline">
+                          {episode.intakeDate}
+                        </Link>
+                      </td>
+                      <td className="p-3">
+                        <Link to={`/encounters/${episode.id}`} className="text-primary hover:underline">
+                          {episode.statusDate}
+                        </Link>
+                      </td>
+                      <td className="p-3">{episode.emailSent}</td>
+                      <td className="p-3">
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline">
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Rocket className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <Button size="sm" variant="destructive">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </td>
+                      <td className="p-3">
+                        <span className={`px-2 py-1 rounded text-xs text-white ${episode.statusColor}`}>
+                          {episode.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="11" className="text-center p-6 text-muted-foreground">
+                      No open episodes found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex justify-between items-center mt-4 pt-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Showing {Math.min((currentPage - 1) * entriesPerPage + 1, filteredEpisodes.length)} to {Math.min(currentPage * entriesPerPage, filteredEpisodes.length)} of {filteredEpisodes.length} entries
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
               >
-                {pageNum}
-              </button>
-            )
-          })}
-          
-          <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            style={{
-              padding: '5px 10px',
-              border: '1px solid #ccc',
-              backgroundColor: currentPage === totalPages ? '#f5f5f5' : 'white',
-              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-              borderRadius: '4px'
-            }}
-          >
-            Next
-          </button>
-        </div>
-      </div>
+                Previous
+              </Button>
+              {[...Array(totalPages)].map((_, i) => (
+                <Button
+                  key={i + 1}
+                  variant={currentPage === i + 1 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(i + 1)}
+                >
+                  {i + 1}
+                </Button>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

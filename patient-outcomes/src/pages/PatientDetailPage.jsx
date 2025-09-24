@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { ArrowLeft, Plus, User, Calendar, Stethoscope } from 'lucide-react'
 import { useData } from '../state/DataContext.jsx'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet'
 
 export default function PatientDetailPage() {
   const { patientId } = useParams()
@@ -26,190 +34,135 @@ export default function PatientDetailPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        <Link to="/" style={{ textDecoration: 'none', color: '#2b5bd7' }}>
-          ← Back
-        </Link>
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Link>
+        </Button>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>
+          <h1 className="text-3xl font-bold">
             {patient.firstName} {patient.lastName}
           </h1>
-          <p style={{ color: '#666', margin: 0 }}>MRN: {patient.mrn}</p>
+          <p className="text-muted-foreground">MRN: {patient.mrn}</p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '600', margin: 0 }}>Encounters</h2>
-        <button 
-          onClick={() => setShowModal(true)}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#2b5bd7',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          + Create new encounter
-        </button>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Encounters</h2>
+        <Button onClick={() => setShowModal(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create New Encounter
+        </Button>
       </div>
 
-      {showModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            padding: '30px',
-            borderRadius: '8px',
-            width: '500px',
-            maxWidth: '90vw'
-          }}>
-            <h3 style={{ marginTop: 0 }}>Create new encounter</h3>
-            <p style={{ color: '#666', marginBottom: '20px' }}>
-              Add a new injury/care episode for this patient
+      <div className="grid gap-4">
+        {encounters.length > 0 ? (
+          encounters.map((encounter, index) => (
+            <motion.div
+              key={encounter.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, delay: index * 0.05 }}
+            >
+              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                <Link to={`/encounters/${encounter.id}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Stethoscope className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">
+                          {encounter.injuryType} ({encounter.bodyPart})
+                        </CardTitle>
+                        <CardDescription>
+                          Care Type: {encounter.careType} | Clinician: {data.clinicians.find(c => c.id === encounter.clinicianId)?.firstName} {data.clinicians.find(c => c.id === encounter.clinicianId)?.lastName} | Started: {encounter.startedAt}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Link>
+              </Card>
+            </motion.div>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">No encounters found for this patient.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <Sheet open={showModal} onOpenChange={setShowModal}>
+        <SheetContent className="w-96">
+          <SheetHeader>
+            <SheetTitle>Create New Encounter</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            <p className="text-muted-foreground mb-6">
+              Fill in the details for the new patient encounter.
             </p>
-            
-            <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                  Clinician
-                </label>
-                <select
-                  value={form.clinicianId}
-                  onChange={e => setForm(f => ({ ...f, clinicianId: e.target.value }))}
-                  style={{ width: '100%', padding: '8px' }}
-                >
-                  {data.clinicians.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.lastName}, {c.firstName}
-                    </option>
-                  ))}
-                </select>
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="clinicianId">Clinician</Label>
+                <Select value={form.clinicianId} onValueChange={(value) => setForm(prev => ({ ...prev, clinicianId: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select clinician" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {data.clinicians.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.firstName} {c.lastName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                  Body part
-                </label>
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="bodyPart">Body Part</Label>
+                <Input
+                  id="bodyPart"
                   value={form.bodyPart}
-                  onChange={e => setForm(f => ({ ...f, bodyPart: e.target.value }))}
-                  placeholder="e.g., knee, shoulder"
-                  style={{ width: '100%', padding: '8px' }}
+                  onChange={e => setForm(prev => ({ ...prev, bodyPart: e.target.value }))}
+                  required
                 />
               </div>
-              
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                  Care type
-                </label>
-                <select
-                  value={form.careType}
-                  onChange={e => setForm(f => ({ ...f, careType: e.target.value }))}
-                  style={{ width: '100%', padding: '8px' }}
-                >
-                  <option value="ORTHOPEDIC">Orthopedic</option>
-                  <option value="NEUROLOGIC">Neurologic</option>
-                  <option value="PELVIC_FLOOR">Pelvic Floor</option>
-                </select>
+              <div className="space-y-2">
+                <Label htmlFor="careType">Care Type</Label>
+                <Select value={form.careType} onValueChange={(value) => setForm(prev => ({ ...prev, careType: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select care type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ORTHOPEDIC">Orthopedic</SelectItem>
+                    <SelectItem value="NEUROLOGIC">Neurologic</SelectItem>
+                    <SelectItem value="PELVIC_FLOOR">Pelvic Floor</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                  Injury type
-                </label>
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="injuryType">Injury Type</Label>
+                <Input
+                  id="injuryType"
                   value={form.injuryType}
-                  onChange={e => setForm(f => ({ ...f, injuryType: e.target.value }))}
-                  placeholder="e.g., ACL sprain, rotator cuff tear"
-                  style={{ width: '100%', padding: '8px' }}
+                  onChange={e => setForm(prev => ({ ...prev, injuryType: e.target.value }))}
+                  required
                 />
               </div>
-              
-              <div style={{ display: 'flex', gap: '10px', paddingTop: '20px' }}>
-                <button 
-                  type="button" 
-                  onClick={() => setShowModal(false)}
-                  style={{
-                    padding: '10px 20px',
-                    backgroundColor: '#f0f0f0',
-                    border: '1px solid #ccc',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
+              <div className="flex gap-4 pt-4">
+                <Button type="button" variant="outline" onClick={() => setShowModal(false)} className="flex-1">
                   Cancel
-                </button>
-                <button 
-                  type="submit"
-                  style={{
-                    padding: '10px 20px',
-                    backgroundColor: '#2b5bd7',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Create
-                </button>
+                </Button>
+                <Button type="submit" className="flex-1">
+                  Create Encounter
+                </Button>
               </div>
             </form>
           </div>
-        </div>
-      )}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {encounters.map(e => (
-          <div
-            key={e.id}
-            style={{
-              backgroundColor: 'white',
-              border: '1px solid #ccc',
-              borderRadius: '8px',
-              padding: '15px',
-              cursor: 'pointer'
-            }}
-          >
-            <Link to={`/encounters/${e.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '18px' }}>{e.bodyPart}</h3>
-                  <p style={{ margin: 0, color: '#666' }}>{e.careType} • {e.injuryType}</p>
-                </div>
-                <div style={{ textAlign: 'right', fontSize: '14px', color: '#666' }}>
-                  <div>📅 {e.startedAt}</div>
-                  <div>👨‍⚕️ {data.clinicians.find(c => c.id === e.clinicianId)?.lastName}</div>
-                </div>
-              </div>
-            </Link>
-          </div>
-        ))}
-        {encounters.length === 0 && (
-          <div style={{
-            backgroundColor: 'white',
-            border: '1px solid #ccc',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center',
-            color: '#666'
-          }}>
-            No encounters yet.
-          </div>
-        )}
-      </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

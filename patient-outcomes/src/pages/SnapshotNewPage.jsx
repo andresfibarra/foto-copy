@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { BarChart3 } from 'lucide-react'
 import { useData } from '../state/DataContext.jsx'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 
 export default function SnapshotNewPage() {
   const { encounterId } = useParams()
@@ -17,93 +23,77 @@ export default function SnapshotNewPage() {
   }
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <div style={{
-        backgroundColor: 'white',
-        border: '1px solid #ccc',
-        borderRadius: '8px',
-        padding: '20px'
-      }}>
-        <h2 style={{ marginTop: 0 }}>Create Snapshot</h2>
-        <p style={{ color: '#666', marginBottom: '20px' }}>
-          Fill out the survey for this encounter
-        </p>
-        
-        <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <label htmlFor="q1" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Question 1 (0-10 scale)
-            </label>
-            <input
-              id="q1"
-              type="number"
-              min="0"
-              max="10"
-              value={responses.q1}
-              onChange={e => setResponses(r => ({ ...r, q1: e.target.value }))}
-              required
-              style={{ width: '100%', padding: '8px' }}
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="q2" style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Question 2 (0-10 scale)
-            </label>
-            <input
-              id="q2"
-              type="number"
-              min="0"
-              max="10"
-              value={responses.q2}
-              onChange={e => setResponses(r => ({ ...r, q2: e.target.value }))}
-              required
-              style={{ width: '100%', padding: '8px' }}
-            />
-          </div>
-          
-          <div style={{
-            padding: '15px',
-            backgroundColor: '#f0f8ff',
-            border: '1px solid #2b5bd7',
-            borderRadius: '4px',
-            textAlign: 'center'
-          }}>
-            <h3 style={{ margin: 0, color: '#2b5bd7' }}>
-              Computed Score: {computedScore}
-            </h3>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '10px', paddingTop: '20px' }}>
-            <button 
-              type="button" 
-              onClick={() => navigate(`/encounters/${encounterId}`)}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#f0f0f0',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#2b5bd7',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Create Snapshot
-            </button>
-          </div>
-        </form>
-      </div>
+    <div className="max-w-2xl mx-auto">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Create New Snapshot
+            </CardTitle>
+            <CardDescription>
+              Fill out the survey for this encounter.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="q1">Question 1 (0-10 scale)</Label>
+                  <Input
+                    id="q1"
+                    type="number"
+                    min="0"
+                    max="10"
+                    value={responses.q1}
+                    onChange={(e) => setResponses(prev => ({ ...prev, q1: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="q2">Question 2 (0-10 scale)</Label>
+                  <Input
+                    id="q2"
+                    type="number"
+                    min="0"
+                    max="10"
+                    value={responses.q2}
+                    onChange={(e) => setResponses(prev => ({ ...prev, q2: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="text-lg font-semibold text-center">
+                  Computed Score Preview: {computedScore}
+                </div>
+              </div>
+              
+              <div className="flex gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate(`/encounters/${encounterId}`)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                >
+                  Create Snapshot
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   )
 }
